@@ -1,7 +1,7 @@
 import pygame
 from pygame import *
 
-from blocks import Platform, PLATFORM_WIDTH, PLATFORM_HEIGHT
+from blocks import Platform, PLATFORM_WIDTH, PLATFORM_HEIGHT, BlockDie
 from player import Player
 
 WINDOW_WIDTH = 800
@@ -42,10 +42,10 @@ LEVEL_1 = [
     '-----------------------------------',
     '-                                 -',
     '-                                 -',
-    '-                     ---         -',
+    '-          *           ---        -',
     '-    --                         ---',
     '-                                 -',
-    '-                                 -',
+    '-                *                -',
     '-             -----               -',
     '--                                -',
     '-                         -       -',
@@ -56,7 +56,7 @@ LEVEL_1 = [
     '-    -----                        -',
     '-                               ---',
     '-             --                  -',
-    '-                                 -',
+    '-                       *         -',
     '-----------------------------------'
 ]
 
@@ -72,6 +72,7 @@ def run_game():
     left = False
     right = False
     up = False
+    running = False
 
     entities = pygame.sprite.Group()
     platforms = list()
@@ -86,6 +87,11 @@ def run_game():
                 platform = Platform(x, y)
                 entities.add(platform)
                 platforms.append(platform)
+            elif symbol == '*':
+                block_die = BlockDie(x, y)
+                entities.add(block_die)
+                platforms.append(block_die)
+
             x += PLATFORM_WIDTH
         x = 0
         y += PLATFORM_HEIGHT
@@ -112,16 +118,22 @@ def run_game():
                 right = False
 
             """Перемещение по Oy"""
-            if event.type == KEYDOWN and event.key == K_SPACE:
+            if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
                 up = True
-            elif event.type == KEYUP and event.key == K_SPACE:
+            elif event.type == KEYUP and (event.key == K_SPACE or event.key == K_UP):
                 up = False
+
+            """Ускорение"""
+            if event.type == KEYDOWN and event.key == K_LSHIFT:
+                running = True
+            elif event.type == KEYUP and event.key == K_LSHIFT:
+                running = False
 
         screen.blit(bg, (0, 0))
 
         """Отрисовка персонажа"""
         camera.update(mario)
-        mario.update(left, right, up, platforms)
+        mario.update(left, right, up, running, platforms)
         for ent in entities:
             screen.blit(ent.image, camera.apply(ent))
 

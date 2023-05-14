@@ -1,12 +1,17 @@
 from pygame import *
 import os
 
+import blocks
 import pyganim
 
 MOVE_SPEED = 7
 WIDTH = 22
 HEIGHT = 32
 COLOR = '#888888'
+
+MOVE_EXTRA_SPEED = 2.5
+JUMP_EXTRA_POWER = 1
+ANIMATION_SUPER_SPEED_DELAY = 0.05
 
 JUMP_POWER = 10
 GRAVITY = 0.35
@@ -55,17 +60,27 @@ class Player(sprite.Sprite):
 
         """Анимация движения вправо"""
         bolt_anim = []
+        bolt_anim_super_speed = list()
         for animation in ANIMATION_RIGHT:
             bolt_anim.append((animation, ANIMATION_DELAY))
+            bolt_anim_super_speed.append((animation, ANIMATION_SUPER_SPEED_DELAY))
         self.bolt_anim_right = pyganim.PygAnimation(bolt_anim)
         self.bolt_anim_right.play()
 
+        self.bolt_anim_right_super_speed = pyganim.PygAnimation(bolt_anim_super_speed)
+        self.bolt_anim_right_super_speed.play()
+
         """Анимация движения влево"""
         bolt_anim = []
+        bolt_anim_super_speed = list()
         for animation in ANIMATION_LEFT:
             bolt_anim.append((animation, ANIMATION_DELAY))
+            bolt_anim_super_speed.append((animation, ANIMATION_SUPER_SPEED_DELAY))
         self.bolt_anim_left = pyganim.PygAnimation(bolt_anim)
         self.bolt_anim_left.play()
+
+        self.bolt_anim_left_super_speed = pyganim.PygAnimation(bolt_anim_super_speed)
+        self.bolt_anim_left_super_speed.play()
 
         """Анимация неподвижности"""
         self.bolt_anim_stay = pyganim.PygAnimation(ANIMATION_STAY)
@@ -84,28 +99,40 @@ class Player(sprite.Sprite):
         self.bolt_anim_jump = pyganim.PygAnimation(ANIMATION_JUMP)
         self.bolt_anim_jump.play()
 
-    def update(self, left, right, up, platforms):
+    def update(self, left, right, up, running, platforms):
         if up:
             if self.on_ground:
                 self.y_vel = -JUMP_POWER
-            self.image.fill(Color(COLOR))
-            self.bolt_anim_jump.blit(self.image, (0, 0))
+                if running and (left or right):
+                    self.y_vel -= JUMP_EXTRA_POWER
+                self.image.fill(Color(COLOR))
+                self.bolt_anim_jump.blit(self.image, (0, 0))
 
         if left:
             self.x_vel = -MOVE_SPEED
             self.image.fill(Color(COLOR))
+            if running:  # Если ускорены
+                self.x_vel -= MOVE_EXTRA_SPEED
+                if not up:
+                    self.bolt_anim_left_super_speed.blit(self.image, (0, 0))
+            else:  # Если не ускорены
+                if not up:
+                    self.bolt_anim_left.blit(self.image, (0, 0))
             if up:
                 self.bolt_anim_jump_left.blit(self.image, (0, 0))
-            else:
-                self.bolt_anim_left.blit(self.image, (0, 0))
 
         if right:
             self.x_vel = MOVE_SPEED
             self.image.fill(Color(COLOR))
+            if running:
+                self.x_vel += MOVE_EXTRA_SPEED
+                if not up:
+                    self.bolt_anim_right_super_speed.blit(self.image, (0, 0))
+            else:
+                if not up:
+                    self.bolt_anim_right.blit(self.image, (0, 0))
             if up:
                 self.bolt_anim_jump_right.blit(self.image, (0, 0))
-            else:
-                self.bolt_anim_right.blit(self.image, (0, 0))
 
         if not (left or right):
             self.x_vel = 0
@@ -126,6 +153,8 @@ class Player(sprite.Sprite):
     def collide(self, x_vel, y_vel, platforms):
         for platform in platforms:
             if sprite.collide_rect(self, platform):
+                if isinstance(platform, blocks.BlockDie):
+                    self.die()
                 if x_vel > 0:
                     self.rect.right = platform.rect.left
                 if x_vel < 0:
@@ -139,3 +168,11 @@ class Player(sprite.Sprite):
                 if y_vel < 0:
                     self.rect.top = platform.rect.bottom
                     self.y_vel = 0
+
+    def die(self):
+        time.wait(500)
+        self.teleporting(self.start_x, self.start_y)
+
+    def teleporting(self, go_x, go_y):
+        self.rect.x = go_x
+        self.rect.y = go_y
