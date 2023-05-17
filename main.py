@@ -1,7 +1,8 @@
 import pygame
 from pygame import *
 
-from blocks import Platform, PLATFORM_WIDTH, PLATFORM_HEIGHT, BlockDie
+from blocks import Platform, PLATFORM_WIDTH, PLATFORM_HEIGHT, BlockDie, BlockTeleport, Princess
+from monsters import *
 from player import Player
 
 WINDOW_WIDTH = 800
@@ -42,7 +43,7 @@ LEVEL_1 = [
     '-----------------------------------',
     '-                                 -',
     '-                                 -',
-    '-          *           ---        -',
+    '-          *           ---       P-',
     '-    --                         ---',
     '-                                 -',
     '-                *                -',
@@ -75,9 +76,20 @@ def run_game():
     running = False
 
     entities = pygame.sprite.Group()
+    animated_entities = pygame.sprite.Group()
+    monsters = pygame.sprite.Group()
     platforms = list()
 
     entities.add(mario)
+
+    tp = BlockTeleport(128, 512, 800, 64)
+    mn = Monster(200, 280, 2, 3, 150, 15)
+    entities.add(tp)
+    entities.add(mn)
+    platforms.append(tp)
+    platforms.append(mn)
+    animated_entities.add(tp)
+    monsters.add(mn)
 
     """Отрисовка платформ"""
     x, y = 0, 0
@@ -91,6 +103,11 @@ def run_game():
                 block_die = BlockDie(x, y)
                 entities.add(block_die)
                 platforms.append(block_die)
+            elif symbol == 'P':
+                princess = Princess(x, y)
+                entities.add(princess)
+                platforms.append(princess)
+                animated_entities.add(princess)
 
             x += PLATFORM_WIDTH
         x = 0
@@ -138,6 +155,9 @@ def run_game():
             screen.blit(ent.image, camera.apply(ent))
 
         CLOCK.tick(FPS)
+        animated_entities.update()
+        monsters.update(platforms)
+
         pygame.display.update()
 
 

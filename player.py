@@ -2,6 +2,7 @@ from pygame import *
 import os
 
 import blocks
+import monsters
 import pyganim
 
 MOVE_SPEED = 7
@@ -57,6 +58,8 @@ class Player(sprite.Sprite):
         self.image.fill(Color(COLOR))
         self.rect = Rect(x, y, WIDTH, HEIGHT)
         self.image.set_colorkey(Color(COLOR))  # Прозрачный фон
+
+        self.winner = False
 
         """Анимация движения вправо"""
         bolt_anim = []
@@ -153,8 +156,15 @@ class Player(sprite.Sprite):
     def collide(self, x_vel, y_vel, platforms):
         for platform in platforms:
             if sprite.collide_rect(self, platform):
-                if isinstance(platform, blocks.BlockDie):
+                if isinstance(platform, blocks.BlockDie) or isinstance(platform, monsters.Monster):
                     self.die()
+
+                elif isinstance(platform, blocks.BlockTeleport):  # Проверка столкновения с телепортом
+                    self.teleporting(platform.go_x, platform.go_y)
+
+                elif isinstance(platform, blocks.Princess):
+                    self.winner = True
+
                 if x_vel > 0:
                     self.rect.right = platform.rect.left
                 if x_vel < 0:
