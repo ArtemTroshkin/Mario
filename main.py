@@ -1,7 +1,7 @@
 import pygame
 from pygame import *
 
-from blocks import Platform, PLATFORM_WIDTH, PLATFORM_HEIGHT, BlockDie, BlockTeleport, Princess
+from blocks import Platform, PLATFORM_WIDTH, PLATFORM_HEIGHT, BlockDie, BlockTeleport, Princess, NextLevel
 from monsters import *
 from player import Player
 
@@ -9,6 +9,8 @@ WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
 DISPLAY = (WINDOW_WIDTH, WINDOW_HEIGHT)
 BACKGROUND_COLOR = '#004400'
+
+CURRENT_LEVEL = 1
 
 FPS = 60
 CLOCK = pygame.time.Clock()
@@ -39,11 +41,11 @@ def camera_configure(camera, target_rect):
     return Rect(l, t, w, h)
 
 
-LEVEL_1 = [
+LEVELS = [[
     '-----------------------------------',
     '-                                 -',
     '-                                 -',
-    '-          *           ---       P-',
+    '-          *           ---       N-',
     '-    --                         ---',
     '-                                 -',
     '-                *                -',
@@ -59,6 +61,28 @@ LEVEL_1 = [
     '-             --                  -',
     '-                       *         -',
     '-----------------------------------'
+],
+    [
+        '-----------------------------------',
+        '-                                 -',
+        '-                                 -',
+        '-          *           ---       P-',
+        '-    --                         ---',
+        '-                                 -',
+        '-                *                -',
+        '-             -----               -',
+        '--                                -',
+        '-                         -       -',
+        '-       --                        -',
+        '-                                 -',
+        '-                 --------        -',
+        '-                                 -',
+        '-    -----                        -',
+        '-                               ---',
+        '-             --                  -',
+        '-                       *         -',
+        '-----------------------------------'
+    ]
 ]
 
 
@@ -80,45 +104,70 @@ def run_game():
     monsters = pygame.sprite.Group()
     platforms = list()
 
-    entities.add(mario)
+    def draw_platforms():
+        """Отрисовка платформ"""
+        entities.add(mario)
 
-    tp = BlockTeleport(128, 512, 800, 64)
-    mn = Monster(200, 280, 2, 3, 150, 15)
-    entities.add(tp)
-    entities.add(mn)
-    platforms.append(tp)
-    platforms.append(mn)
-    animated_entities.add(tp)
-    monsters.add(mn)
+        def add_teleport(teleport):
+            entities.add(teleport)
+            platforms.append(teleport)
+            animated_entities.add(teleport)
 
-    """Отрисовка платформ"""
-    x, y = 0, 0
-    for row in LEVEL_1:
-        for symbol in row:
-            if symbol == '-':
-                platform = Platform(x, y)
-                entities.add(platform)
-                platforms.append(platform)
-            elif symbol == '*':
-                block_die = BlockDie(x, y)
-                entities.add(block_die)
-                platforms.append(block_die)
-            elif symbol == 'P':
-                princess = Princess(x, y)
-                entities.add(princess)
-                platforms.append(princess)
-                animated_entities.add(princess)
+        def add_monster(monster):
+            entities.add(monster)
+            platforms.append(monster)
+            monsters.add(monster)
 
-            x += PLATFORM_WIDTH
-        x = 0
-        y += PLATFORM_HEIGHT
+        tp_1 = BlockTeleport(x=128, y=512, go_x=700, go_y=64)
+        tp_2 = BlockTeleport(x=800, y=64, go_x=228, go_y=512)
 
-    total_level_width = len(LEVEL_1[0]) * PLATFORM_WIDTH
-    total_level_height = len(LEVEL_1) * PLATFORM_HEIGHT
+        add_teleport(tp_1)
+        add_teleport(tp_2)
+
+        mn = Monster(200, 280, 2, 3, 150, 15)
+        add_monster(mn)
+
+        x, y = 0, 0
+        for row in LEVELS[mario.current_level]:
+            for symbol in row:
+                if symbol == '-':
+                    platform = Platform(x, y)
+                    entities.add(platform)
+                    platforms.append(platform)
+                elif symbol == '*':
+                    block_die = BlockDie(x, y)
+                    entities.add(block_die)
+                    platforms.append(block_die)
+                elif symbol == 'N':
+                    next_level_teleport = NextLevel(x, y)
+                    entities.add(next_level_teleport)
+                    platforms.append(next_level_teleport)
+                    animated_entities.add(next_level_teleport)
+                elif symbol == 'P':
+                    princess = Princess(x, y)
+                    entities.add(princess)
+                    platforms.append(princess)
+                    animated_entities.add(princess)
+
+                x += PLATFORM_WIDTH
+            x = 0
+            y += PLATFORM_HEIGHT
+
+    draw_platforms()
+    total_level_width = len(LEVELS[mario.current_level][0]) * PLATFORM_WIDTH
+    total_level_height = len(LEVELS[mario.current_level]) * PLATFORM_HEIGHT
 
     camera = Camera(camera_configure, total_level_width, total_level_height)
 
-    while True:
+    while not mario.winner:
+        if mario.current_level > 0 and mario.change_level:
+            platforms.clear()
+            entities.empty()
+            animated_entities.empty()
+            monsters.empty()
+            draw_platforms()
+            mario.change_level = False
+
         for event in pygame.event.get():
             if event.type == QUIT:
                 raise SystemExit('QUIT')

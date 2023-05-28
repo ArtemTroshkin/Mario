@@ -62,3 +62,18 @@ class Princess(Platform):
     def update(self):
         self.image.fill(Color(PLATFORM_COLOR))
         self.bolt_anim.blit(self.image, (0, 0))
+
+
+class NextLevel(Platform):
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        bolt_anim = list()
+        for anim in ANIMATION_BLOCK_TELEPORT:
+            # TODO: поменять анимацию портала
+            bolt_anim.append((anim, 0.3))
+        self.bolt_anim = pyganim.PygAnimation(bolt_anim)
+        self.bolt_anim.play()
+
+    def update(self) -> None:
+        self.image.fill(Color(PLATFORM_COLOR))
+        self.bolt_anim.blit(self.image, (0, 0))

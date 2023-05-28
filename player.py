@@ -44,7 +44,7 @@ ANIMATION_STAY = [(fr'{BASE_DIR}/mario/0.png', 0.1)]
 
 
 class Player(sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, x, y, current_level=0):
         sprite.Sprite.__init__(self)
         self.x_vel = 0
         self.start_x = x
@@ -58,6 +58,9 @@ class Player(sprite.Sprite):
         self.image.fill(Color(COLOR))
         self.rect = Rect(x, y, WIDTH, HEIGHT)
         self.image.set_colorkey(Color(COLOR))  # Прозрачный фон
+
+        self.current_level = current_level
+        self.change_level = False
 
         self.winner = False
 
@@ -165,19 +168,25 @@ class Player(sprite.Sprite):
                 elif isinstance(platform, blocks.Princess):
                     self.winner = True
 
-                if x_vel > 0:
-                    self.rect.right = platform.rect.left
-                if x_vel < 0:
-                    self.rect.left = platform.rect.right
+                elif isinstance(platform, blocks.NextLevel):
+                    self.current_level += 1
+                    self.teleporting(self.start_x, self.start_y)
+                    self.change_level = True
 
-                if y_vel > 0:
-                    self.rect.bottom = platform.rect.top
-                    self.on_ground = True
-                    self.y_vel = 0
+                else:
+                    if x_vel > 0:
+                        self.rect.right = platform.rect.left
+                    if x_vel < 0:
+                        self.rect.left = platform.rect.right
 
-                if y_vel < 0:
-                    self.rect.top = platform.rect.bottom
-                    self.y_vel = 0
+                    if y_vel > 0:
+                        self.rect.bottom = platform.rect.top
+                        self.on_ground = True
+                        self.y_vel = 0
+
+                    if y_vel < 0:
+                        self.rect.top = platform.rect.bottom
+                        self.y_vel = 0
 
     def die(self):
         time.wait(500)
